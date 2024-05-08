@@ -1,0 +1,133 @@
+generator client {
+  provider   = "prisma-client-js"
+  output     = "../.prisma/client"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model Node {
+  nodeID        String @id
+  xcoord        Int
+  ycoord        Int
+  floor         String
+  building      String
+  nodeType      String
+  longName      String
+  shortName     String
+  // create a relation for both edges coming into the node and edges leaving the node
+  edgesLeaving  Edge[] @relation("EdgesLeaving")
+  edgesIncoming Edge[] @relation("EdgesIncoming")
+}
+
+model Edge {
+  edgeID      String @id
+  // add start/end edges to the tables created for start and end edges above
+  startNode   Node   @relation("EdgesLeaving", fields: [startNodeID], references: [nodeID])
+  startNodeID String
+  endNode     Node   @relation("EdgesIncoming", fields: [endNodeID], references: [nodeID])
+  endNodeID   String
+}
+
+model ServiceRequest {
+  serviceID           Int                  @id @default(autoincrement())
+  type                ServiceType // establish as the parent entity
+  location            String
+  description         String?
+  requestingUsername  String
+  enteredTime         DateTime             @default(now())
+  updatedTime         DateTime             @default(now())
+  requestedTime       DateTime
+  priority            String
+  status              String
+  assignedTo          String
+  medicineDelivery    MedicineDelivery?
+  SecurityService     SecurityService?
+  SanitationService   SanitationService?
+  RoomScheduling      RoomScheduling?
+  DeviceDelivery      DeviceDelivery?
+  GiftDelivery        GiftDelivery?
+  ITRequest           ITRequest?
+  FoodDeliveryService FoodDeliveryService?
+  // establish an is-a by saying a service request can have medicine delivery fields. This way we can get info on medicineDelivery from service request
+}
+
+enum ServiceType {
+  MedicineDelivery
+  SecurityService
+  SanitationService
+  RoomScheduling
+  DeviceDelivery
+  GiftDelivery
+  ITRequest
+  FoodDeliveryService
+}
+
+model MedicineDelivery {
+  medicineRequestID Int            @id
+  medicineName      String
+  dosage            String
+  patientName       String
+  serviceRequest    ServiceRequest @relation(fields: [medicineRequestID], references: [serviceID], onDelete: Cascade)
+}
+
+model SecurityService {
+  securityID     Int            @id
+  securityType   String
+  numberPeople   Int
+  serviceRequest ServiceRequest @relation(fields: [securityID], references: [serviceID], onDelete: Cascade)
+}
+
+model SanitationService {
+  sanitationID      Int            @id
+  sanitationType    String
+  requiredEquipment String
+  serviceRequest    ServiceRequest @relation(fields: [sanitationID], references: [serviceID], onDelete: Cascade)
+}
+
+model RoomScheduling {
+  reservationID     Int            @id
+  reservationReason String
+  endTime           DateTime
+  serviceRequest    ServiceRequest @relation(fields: [reservationID], references: [serviceID], onDelete: Cascade)
+}
+
+model DeviceDelivery {
+  deliveryID     Int            @id
+  deviceType     String
+  quantity       Int
+  serviceRequest ServiceRequest @relation(fields: [deliveryID], references: [serviceID], onDelete: Cascade)
+}
+
+model GiftDelivery {
+  giftID         Int            @id
+  giftType       String
+  senderNote     String
+  serviceRequest ServiceRequest @relation(fields: [giftID], references: [serviceID], onDelete: Cascade)
+}
+
+model ITRequest {
+  ITRequestID    Int            @id
+  problemType    String
+  serviceRequest ServiceRequest @relation(fields: [ITRequestID], references: [serviceID], onDelete: Cascade)
+}
+
+model FoodDeliveryService {
+  foodRequestID  Int            @id
+  protein        String
+  side           String
+  serviceRequest ServiceRequest @relation(fields: [foodRequestID], references: [serviceID], onDelete: Cascade)
+}
+
+model Employee {
+  employeeID     Int    @id
+  name           String
+  userName       String
+  position       String
+  role           String
+  profilePicture String
+  email          String
+}
